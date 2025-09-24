@@ -1,0 +1,39 @@
+name: Generate Image Manifest
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Generate manifest.json
+      run: |
+        mkdir -p output
+        echo "{" > output/manifest.json
+        for file in *.png *.jpg *.jpeg *.svg; do
+          filename=$(basename "$file")
+          url="https://raw.githubusercontent.com/${{ github.repository }}/main/$filename"
+          echo "  \"${filename%.*}\": \"$url\"," >> output/manifest.json
+        done
+        sed -i '$ s/,$//' output/manifest.json
+        echo "}" >> output/manifest.json
+
+    - name: Commit manifest.json
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        cp output/manifest.json manifest.json
+        git add manifest.json
+        git commit -m "Auto-generate manifest.json"
+        git push
+
+
+
+
